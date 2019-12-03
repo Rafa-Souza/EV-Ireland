@@ -1,0 +1,141 @@
+/* Basic */
+body {
+    color: #fff;
+}
+.gold-text {
+    color: #ffc300
+}
+.black-text {
+    color: #000;
+}
+.text-right {
+    text-align: right;
+}
+hr {
+    margin: 15px  0px;
+    border-color: black
+}
+/* END Basic */
+
+/* Menu */
+.menu-status-table {
+    width: 100%
+}
+
+.menu-status-table td:not(:first-child) {
+    text-align: right;
+}
+
+.menu-status-table td:first-child {
+    color: #ffc300;
+}
+
+.menu-status-table caption{
+    padding-bottom: 8px;
+}
+
+.legend{
+   text-align: center;
+}
+
+.bars {
+    display: flex;
+    align-items: flex-end;
+    vertical-align: baseline;
+}
+
+.bars .bar{
+    flex-basis: 16.666%;
+    transition: height .4s ease;
+    border-radius: 4px;
+    margin: 0px 5px;
+}
+
+.subtitle {
+    display: flex;
+    align-items: flex-end;
+    vertical-align: baseline;
+    margin: 6px;
+    font-size: 12px;
+}
+
+.subtitle div{
+    flex-basis: 15%;
+}
+.subtitle .subtitle-2{
+    flex-basis: 70%;
+    text-align: center;
+}
+.subtitle .subtitle-3{
+    text-align: right;
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.charge-type-checkboxes {
+    height: 80px;
+}
+.charge-type-checkboxes label{
+    display: block;
+    padding: 4px;
+    float: left;
+}
+
+.menu-filter label {
+    width: 50px;
+    display: inline-block;
+    padding: 5px 0px;
+    text-align: center;
+}
+
+.menu-filter input {
+    height: 18px;
+    width: 90px;
+}
+.menu-filter .react-datepicker__close-icon {
+    padding: 0px;
+}
+
+.filter-btn {
+    background-color: #216ba5;
+    color: white;
+    border-radius: 4px;
+    width: 100px;
+    padding: 4px;
+    border: none;
+    margin: 10px auto;
+    display: block;
+    cursor: pointer;
+}
+
+/* END Menu */
+
+
+/* ToolTip */
+.stats-table {
+    width: 500px;
+}
+
+.stats-table th {
+    color: #ffc300;
+}
+
+.stats-table th, .stats-table td {
+    padding: 0px 8px;
+}
+
+.stats-table th:not(:first-child), .stats-table td:not(:first-child) {
+    text-align: center
+}
+
+.stats-table th:first-child, .stats-table td:first-child {
+    text-align: left
+}
+
+.charge-point-address {
+    max-width: 500px;
+}
+/* END ToolTip */
