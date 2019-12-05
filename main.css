@@ -111,6 +111,12 @@ hr {
     cursor: pointer;
 }
 
+.filter-btn:disabled,
+.filter-btn[disabled]{
+  background-color: #999999;
+  cursor: wait;
+}
+
 /* END Menu */
 
 

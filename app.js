@@ -64,6 +64,7 @@ export class App extends Component {
         this.state = {
             elevationScale: 150,
             radius: 100,
+            loading: false,
             data: [],
             filteredData: [],
             chargeTypes: {
@@ -88,30 +89,37 @@ export class App extends Component {
                     value: "CHAdeMO" 
                 }
             },
+            percentageDivider: 1,
             minDate: null,
             maxDate: null,
-            startDate: new Date(),
-            endDate: new Date(),
-            startTime: new Date().setHours(0,0),
-            endTime: new Date().setHours(23,59),
+            startDate: null,
+            endDate: null,
+            startTime: null,
+            endTime: null,
             hoveredObject: null,
             pointerX: 0,
             pointerY: 0
         };
+        this._customElevationCalc = this._customElevationCalc.bind(this);
+        this._mountStats = this._mountStats.bind(this);
+        this.filterData = this.filterData.bind(this);
     }
 
     componentDidMount() {
-        this._getMinMaxDate();
-        this._processData();
+        this._initiateData();
     }
 
-    _getMinMaxDate() {
+    _initiateData() {
         fetch(DATE_INTERVAL_URL).then(response => {
             response.json().then(data => {
+                let maximumDate = new Date(data.max);
                 this.setState({
-                    minDate:  new Date(data.min),
-                    maxDate:  new Date(data.max)
+                    minDate: new Date(data.min),
+                    maxDate: new Date(maximumDate),
+                    startDate: new Date(new Date(maximumDate).setMonth(maximumDate.getMonth() - 3)),
+                    endDate: new Date(maximumDate)
                 });
+                this.filterData();
             });
         })
         .catch(function(error) {
@@ -119,17 +127,22 @@ export class App extends Component {
         });
     }
 
-    _processData() {
-        fetch(DATA_URL).then(response => {
+    _processData(URL) {
+        URL = URL || DATA_URL;
+        this.setState({loading: true});
+        fetch(URL).then(response => {
             response.json().then(data => {
                 this.setState({
-                    data 
+                    data
                 });
                 this._filterChargeTypes(null, this);
             });
         })
         .catch(function(error) {
             console.log('There has been a problem with your fetch operation: ' + error.message);
+        })
+        .finally(() =>{
+            this.setState({loading: false});
         });
     };
 
@@ -161,11 +174,11 @@ export class App extends Component {
     _mountStats(points) {
         return points.map((point, key) => {
             return (<tr className="charge-type-card" key={key}>
-                <td>{ point.charge_point_type }</td>
-                <td>{ ((point.total_occ/288) * 100).toFixed(1) }%</td>
-                <td>{ ((point.total_part/288) * 100).toFixed(1) }%</td>
-                <td>{ ((point.total_oos/288) * 100).toFixed(1) }%</td>
-                <td>{ ((point.total_ooc/288) * 100).toFixed(1) }%</td>
+                <td>{ point.type }</td>
+                <td>{ ((point.total_occ/this.state.percentageDivider) * 100).toFixed(1) }%</td>
+                <td>{ ((point.total_part/this.state.percentageDivider) * 100).toFixed(1) }%</td>
+                <td>{ ((point.total_oos/this.state.percentageDivider) * 100).toFixed(1) }%</td>
+                <td>{ ((point.total_ooc/this.state.percentageDivider) * 100).toFixed(1) }%</td>
             </tr>)
         })
     }
@@ -227,7 +240,7 @@ export class App extends Component {
             return ct.checked ? array.concat(ct.value) : array
         },[]);
         let filteredData = self.state.data.filter((point) => {
-            return chargeTypesToInclude.includes(point.charge_point_type);
+            return chargeTypesToInclude.includes(point.type);
         });
         self.setState({filteredData})
     }
@@ -275,7 +288,7 @@ export class App extends Component {
                             selected={this.state.startDate}
                             onChange={date => this.setState({startDate: date})}
                             minDate={this.state.minDate}
-                            maxDate={this.state.endDate}
+                            maxDate={this.state.endDate || this.state.maxDate}
                             dateFormat="dd/MM/yyyy"
                             showYearDropdown
                             dropdownMode="select"
@@ -288,7 +301,7 @@ export class App extends Component {
                         <DatePicker
                             selected={this.state.endDate}
                             onChange={date => this.setState({endDate: date})}
-                            minDate={this.state.startDate}
+                            minDate={this.state.startDate || this.state.minDate}
                             maxDate={this.state.maxDate}
                             dateFormat="dd/MM/yyyy"
                             showYearDropdown
@@ -309,7 +322,7 @@ export class App extends Component {
                             placeholderText="Select Time..."
                             showTimeSelect
                             showTimeSelectOnly
-                            timeIntervals={15}
+                            timeIntervals={5}
                             timeCaption="Time"
                             dateFormat="HH:mm"
                             timeFormat="HH:mm"
@@ -323,7 +336,7 @@ export class App extends Component {
                             placeholderText="Select Time..."
                             showTimeSelect
                             showTimeSelectOnly
-                            timeIntervals={15}
+                            timeIntervals={5}
                             timeCaption="Time"
                             dateFormat="HH:mm"
                             timeFormat="HH:mm"
@@ -337,7 +350,7 @@ export class App extends Component {
 
     _customElevationCalc(points) {
         let avg_occ = points.reduce((sum,point) => sum + point.total_occ + (point.total_part/2), 0)/points.length;
-        return (avg_occ/288) * 100
+        return (avg_occ/this.state.percentageDivider) * 100
     }
 
     _onZoom(viewObj) {
@@ -381,6 +394,32 @@ export class App extends Component {
         ];
     }
 
+    filterData() {
+        let queryParams = [];
+        if(this.state.startDate) queryParams.push("startDate=" + new Date(this.state.startDate).toISOString().slice(0,10));
+        if(this.state.endDate) queryParams.push("endDate=" + new Date(this.state.endDate).toISOString().slice(0,10));
+        if(this.state.startTime) queryParams.push("startTime=" + new Date(this.state.startTime).toISOString().slice(11, 16));
+        if(this.state.endTime) queryParams.push("endTime=" + new Date(this.state.endTime).toISOString().slice(11, 16));
+        if(queryParams.length){
+            this._processData(DATA_URL+'?'+queryParams.join('&'));
+            this._generatePercentageDivider();
+        }
+    }
+
+    _generatePercentageDivider() {
+        let divider = 1;
+
+        let initialDate = this.state.startDate || this.state.minDate;
+        let lastDate = this.state.endDate || this.state.maxDate;
+        let days = 1 + ((lastDate - initialDate)/(1000 * 3600 * 24));
+
+        let initialTime = this.state.startTime || new Date(new Date(new Date().setHours(0)).setMinutes(0));
+        let lastTime = this.state.endTime || new Date(new Date(new Date().setHours(23)).setMinutes(59));
+        let minutesPerDay = ((lastTime.getHours() * 60) + lastTime.getMinutes()) - ((initialTime.getHours() * 60) + initialTime.getMinutes());
+        divider = days * ((minutesPerDay/5) + 2);
+        this.setState({percentageDivider: divider})
+    }
+
     render() {
         const {mapStyle = 'mapbox://styles/mapbox/dark-v9'} = this.props;
 
@@ -398,7 +437,10 @@ export class App extends Component {
                     <hr/>
                     <div className="menu-filter">
                         {this._renderFilterTable()}
-                        <button className="filter-btn">Filter Dataset</button>
+                        <button className="filter-btn" onClick={this.filterData} disabled={this.state.loading}>
+                            Filter Dataset
+                        </button>
+                        {/* <div className="title"><b>Results</b></div> */}
                     </div>
                     <hr/>
                     {this._renderChargeTypes()}
