@@ -90,6 +90,7 @@ export class App extends Component {
                 }
             },
             percentageDivider: 1,
+            selectedAggregator: 'average-usage',
             minDate: null,
             maxDate: null,
             startDate: null,
@@ -150,7 +151,7 @@ export class App extends Component {
         const {hoveredObject, pointerX, pointerY} = this.state || {};
         return hoveredObject && (
             <div style={{...hoverStyle, left: pointerX, top: pointerY}}>
-                <div className="charge-point-usage">Average Usage: {hoveredObject.elevationValue.toFixed(1)}%</div>
+                <div className="charge-point-usage">Aggregator: {hoveredObject.elevationValue.toFixed(1)}%</div>
                 <div className="charge-point-address">Address: {hoveredObject.points[0].address}</div>
                 <br/>
                 <table className="stats-table">
@@ -185,9 +186,9 @@ export class App extends Component {
 
     _renderMenuStatusTable() {
         return (
-            <div>
+            <div className="menu-aggregator">
                 <table className="menu-status-table">
-                    <caption><b>Status Description</b></caption>
+                    <caption><b>Status Aggregator</b></caption>
                     <tbody>
                         <tr>
                             <td>FO</td>
@@ -207,6 +208,7 @@ export class App extends Component {
                         </tr>
                     </tbody>
                 </table>
+                {this._renderAggregator()}
             </div>
         )
     }
@@ -225,7 +227,7 @@ export class App extends Component {
                 </div>
                 <div className="subtitle">
                     <div className="subtitle-1">Low</div>
-                    <div className="subtitle-2">Usage (%)</div>
+                    <div className="subtitle-2">Aggregator (%)</div>
                     <div className="subtitle-3">High</div>
                 </div>
             </div>
@@ -251,22 +253,87 @@ export class App extends Component {
             <div className="title"><b>Charge Point Types</b></div>
             <div className="charge-type-checkboxes">
                 <label>
-                    <input type="checkbox" checked={this.state.chargeTypes.isStandardType2.checked} onChange={(e) => {this._filterChargeTypes("isStandardType2", this)}}/>StandardType2
+                    <input type="checkbox"
+                    checked={this.state.chargeTypes.isStandardType2.checked}
+                    onChange={(e) => {this._filterChargeTypes("isStandardType2", this)}}/>
+                    StandardType2
                 </label>
                 <label>
-                    <input type="checkbox" checked={this.state.chargeTypes.isServices.checked} onChange={(e) => {this._filterChargeTypes("isServices", this)}}/>Services
+                    <input type="checkbox"
+                    checked={this.state.chargeTypes.isServices.checked}
+                    onChange={(e) => {this._filterChargeTypes("isServices", this)}}/>
+                    Services
                 </label>
                 <label>
-                    <input type="checkbox" checked={this.state.chargeTypes.isComboCCS.checked} onChange={(e) => {this._filterChargeTypes("isComboCCS", this)}}/>ComboCCS
+                    <input type="checkbox"
+                    checked={this.state.chargeTypes.isComboCCS.checked}
+                    onChange={(e) => {this._filterChargeTypes("isComboCCS", this)}}/>
+                    ComboCCS
                 </label>
                 <label>
-                    <input type="checkbox" checked={this.state.chargeTypes.isFastAC43.checked} onChange={(e) => {this._filterChargeTypes("isFastAC43", this)}}/>FastAC43
+                    <input type="checkbox"
+                    checked={this.state.chargeTypes.isFastAC43.checked}
+                    onChange={(e) => {this._filterChargeTypes("isFastAC43", this)}}/>
+                    FastAC43
                 </label>
                 <label>
-                    <input type="checkbox" checked={this.state.chargeTypes.isCHAdeMO.checked} onChange={(e) => {this._filterChargeTypes("isCHAdeMO", this)}}/>CHAdeMOL
+                    <input type="checkbox"
+                    checked={this.state.chargeTypes.isCHAdeMO.checked}
+                    onChange={(e) => {this._filterChargeTypes("isCHAdeMO", this)}}/>
+                    CHAdeMOL
                 </label>
             </div>
         </div>
+        )
+    }
+
+    _updateAggregator(aggregator){
+        this.setState({selectedAggregator: aggregator});
+    }
+
+    _renderAggregator() {
+        return (
+
+            <div className="aggregator-radios">
+                <form>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'average-usage'}
+                        onChange={(e) => {this._updateAggregator('average-usage')}}/>
+                        Average Usage
+                    </label>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'available'}
+                        onChange={(e) => {this._updateAggregator('available')}}/>
+                        Available
+                    </label>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'fully-occupied'}
+                        onChange={(e) => {this._updateAggregator('fully-occupied')}}/>
+                        FO
+                    </label>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'partially-occupied'}
+                        onChange={(e) => {this._updateAggregator('partially-occupied')}}/>
+                        PO
+                    </label>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'out-of-service'}
+                        onChange={(e) => {this._updateAggregator('out-of-service')}}/>
+                        OOS
+                    </label>
+                    <label>
+                        <input type="radio"
+                        checked={this.state.selectedAggregator === 'out-of-contact'}
+                        onChange={(e) => {this._updateAggregator('out-of-contact')}}/>
+                        OOC
+                    </label>
+                </form>
+            </div>
         )
     }
 
@@ -349,8 +416,26 @@ export class App extends Component {
     }
 
     _customElevationCalc(points) {
-        let avg_occ = points.reduce((sum,point) => sum + point.total_occ + (point.total_part/2), 0)/points.length;
-        return (avg_occ/this.state.percentageDivider) * 100
+        let avg = points.reduce((sum,point) => sum + this._aggregatorCalculator(this.state.selectedAggregator, point), 0)/points.length;
+        let percentage = (avg/this.state.percentageDivider) * 100
+        if (this.state.selectedAggregator === 'available') percentage = 100 - percentage
+        return percentage
+    }
+
+    _aggregatorCalculator(aggregator, point) {
+        switch (aggregator){
+            case 'average-usage':
+                return point.total_occ + (point.total_part/2);
+            case 'fully-occupied':
+                return point.total_occ;
+            case 'partially-occupied':
+                return point.total_part;
+            case 'out-of-service':
+                    return point.total_oos;
+            case 'out-of-contact':
+                    return point.total_ooc;
+        }
+        return point.total_occ + (point.total_part/2) + point.total_oos + point.total_ooc;
     }
 
     _onZoom(viewObj) {
@@ -378,6 +463,10 @@ export class App extends Component {
                 getPosition: d => [Number(d.longitude), Number(d.latitude)],
                 getColorValue : this._customElevationCalc,
                 getElevationValue: this._customElevationCalc,
+                updateTriggers: {
+                    getColorValue: [this.state.selectedAggregator],
+                    getElevationValue: [this.state.selectedAggregator]
+                },
                 onHover: info => this.setState({
                     hoveredObject: info.object,
                     pointerX: info.x,
@@ -431,9 +520,11 @@ export class App extends Component {
                         <p>Which EV Charging Points are most often in use in Ireland?</p>
                     </div>
                     <hr/>
-                    {this._renderMenuStatusTable()}
-                    <hr/>
                     {this._renderLegend()}
+                    <hr/>
+                    {this._renderMenuStatusTable()}
+                    {/* {this._renderAggregator()}
+                    <hr/> */}
                     <hr/>
                     <div className="menu-filter">
                         {this._renderFilterTable()}

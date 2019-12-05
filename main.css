@@ -84,6 +84,20 @@ hr {
     float: left;
 }
 
+.menu-aggregator {
+    margin-bottom: 80px;
+}
+
+.aggregator-radios {
+    margin-top: 10px;
+}
+
+.aggregator-radios label{
+    display: block;
+    padding: 4px;
+    float: left;
+}
+
 .menu-filter label {
     width: 50px;
     display: inline-block;
